@@ -1,10 +1,7 @@
-//TODO: Disable transfers for non-operators
-
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "erc721a/contracts/ERC721A.sol";
+import "erc721a/contracts/extensions/ERC721ABurnable.sol";
 import "./interfaces/TruflationClient.sol";
 
 
@@ -14,17 +11,12 @@ import "./interfaces/TruflationClient.sol";
 
 contract RobotNFT is ERC721A {
 
-    /**
-     * Contract variables
-     */
+    // Public variables
     mapping(address => bool) public operator;
     mapping(string => string) public tokenURIs;
     bool public transferrable = false;
 
-    /**
-     * Chainlink variables
-     * Upkeep is handled by TradingBot
-     */
+    // Chainlink Variales
     TruflationClient truflationClient;
     address public oracleAddress; // Chainlink feed address to recieve current data
     
@@ -36,22 +28,43 @@ contract RobotNFT is ERC721A {
         _;
     }
 
+    modifier whenTransferable() {
+        require(transferrable, "You can't transfer this token");
+        _;
+    }
+
     constructor() ERC721A("Robot", "NFT") {
         tokenURIs["happy"] = "url0";
         tokenURIs["stressed"] = "url1";
         tokenURIs["sad"] = "url2";
     }
 
-    /**
-     * Must be a operator to mint
+    /*
+     @notice: mint is for TradingBot contract
+
+     The following checks occur, it checks:
+      - that the sender is a operator
+
+     Upon passing checks it calls the internal _mint function to perform
+     the minting.
      */
     function mint(uint256 quantity) external payable onlyOperator {
         _mint(msg.sender, quantity);
     }
 
-    /**
-     *
+    /*
+     @notice: burn is for TradingBot contract
+
+     The following checks occur, it checks:
+      - that the sender is a operator
+
+     Upon passing checks it calls the internal _burn function to perform
+     the minting.
      */
+    function burn(uint256 tokenId) public onlyOperator {
+        _burn(tokenId, false);
+    }
+
     function tokenURI(uint256 tokenId) public view override (ERC721A) returns (string memory) {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
@@ -64,28 +77,30 @@ contract RobotNFT is ERC721A {
         } else if(inflation > 7) {
             return tokenURIs["sad"];
         }
-
     }
 
-    function getInflation() public returns (uint256) {
+    function transferFrom(address _from, address _to, uint256 _tokenId) public payable override whenTransferable{
+        super.transferFrom(_from, _to, _tokenId);
+    }
+
+    /**
+     * Owner Functions
+     */
+    
+    function setOracleAddress(address _oracleAddress) external onlyOperator {
+        truflationClient = TruflationClient(_oracleAddress);
+    }
+
+    function setTransferable(bool _transferrale) external onlyOperator {
+        transferrable = _transferrale;
+    } 
+
+    /**
+     * Internal Functions
+     */
+    function getInflation() internal returns (uint256) {
         return truflationClient().inflation();
     }
 
-    /**
-     * Disable transfers
-     */
-    function transferFrom(address _from, address _to, uint256 _tokenId) public payable override{
-        _from;
-        _to;
-        _tokenId;
-        require(transferrable, "Cant transfer unless allowed!");
-    }
-
-    /**
-     * Update the oracle address
-     */
-    function setOracleAddress(address _oracleAddress) public onlyOperator {
-        truflationClient = TruflationClient(_oracleAddress);
-    }
 
 }
