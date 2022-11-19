@@ -33,7 +33,10 @@ contract RobotNFT is ERC721A {
         _;
     }
 
-    constructor() ERC721A("Robot", "NFT") {
+    constructor(address _oracleAddress) ERC721A("Robot", "NFT") {
+        setOracleAddress(_oracleAddress);
+        operator[msg.sender] = true;
+        
         tokenURIs["happy"] = "url0";
         tokenURIs["stressed"] = "url1";
         tokenURIs["sad"] = "url2";
@@ -87,12 +90,16 @@ contract RobotNFT is ERC721A {
      * Owner Functions
      */
     
-    function setOracleAddress(address _oracleAddress) external onlyOperator {
+    function setOracleAddress(address _oracleAddress) public onlyOperator {
         truflationClient = TruflationClient(_oracleAddress);
     }
 
-    function setTransferable(bool _transferrale) external onlyOperator {
-        transferrable = _transferrale;
+    function setTransferable(bool _transferrable) external onlyOperator {
+        transferrable = _transferrable;
+    }
+
+    function setOperator(address _address, bool _isOperator) external onlyOperator {
+        operator[_address] = _isOperator;
     } 
 
     /**
@@ -101,6 +108,5 @@ contract RobotNFT is ERC721A {
     function getInflation() internal returns (uint256) {
         return truflationClient().inflation();
     }
-
 
 }

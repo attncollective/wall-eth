@@ -7,19 +7,20 @@
 const hre = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+  // Deploy NFT
+  await deployNFT();
+}
 
-  const lockedAmount = hre.ethers.utils.parseEther("1");
+async function deployNFT (oracleAddress="0x0F7C4A8D7e911E6A6d0b3aAAB6a833601ccE65cC") {
+  const oracleAddress = "0x0F7C4A8D7e911E6A6d0b3aAAB6a833601ccE65cC";
 
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  const Lock = await hre.ethers.getContractFactory("RobotNFT");
+  const lock = await Lock.deploy(oracleAddress);
 
   await lock.deployed();
 
   console.log(
-    `Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
+    `Contract deployed to ${lock.address}`
   );
 }
 
